@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.egis</groupId>
+    <artifactId>mrp</artifactId>
+    <version>1.0</version>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.5</version>
+                <configuration>
+                    <target>
+                        <taskdef name="gant" classname="org.codehaus.gant.ant.Gant"
+                                 classpathref="maven.plugin.classpath"/>
+                        <gant file="build.gant" target="${target}">
+                        </gant>
+                    </target>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.gant</groupId>
+                        <artifactId>gant_groovy2.3</artifactId>
+                        <version>1.9.11</version>
+                    </dependency>
+                </dependencies>
+
+            </plugin>
+        </plugins>
+    </build>
+</project>

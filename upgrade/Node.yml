@@ -1,0 +1,15 @@
+--- !<Node>
+tree:
+  HR:
+    Transfer To Other OD Bus. Requirements:
+      Transfer Request:
+        $indexes: [employee_name, formNo, grade]
+        $rules:
+        - {rule: allocate, to: TransferRequestBusinessRequirements, sync: 'false',
+          events: Document.create}
+      Transfer Letter:
+        $indexes: [employee_name, formNo, grade]
+        $rules:
+        - {rule: allocate, to: TransferLetterBusinessRequirements, sync: 'false',
+          events: Document.create}
+

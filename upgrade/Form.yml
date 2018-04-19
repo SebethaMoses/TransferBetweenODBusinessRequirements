@@ -1,0 +1,17 @@
+--- !<Form>
+autoNumber:
+  padding: 6
+  prefix: HMP
+formType: PDF
+name: Transfer Letter Business Requirements
+node: HR/Transfer To Other OD Bus. Requirements/Transfer Letter
+template: System/forms/transfer_letter_other_od_bus_requirements.pdf
+
+--- !<Form>
+autoNumber:
+  padding: 6
+  prefix: HMP
+formType: PDF
+name: Transfer Request Business Requirements
+node:  HR/Transfer To Other OD Bus. Requirements/Transfer Request
+template: System/forms/transfer_to_other_od_business_requirement.pdf

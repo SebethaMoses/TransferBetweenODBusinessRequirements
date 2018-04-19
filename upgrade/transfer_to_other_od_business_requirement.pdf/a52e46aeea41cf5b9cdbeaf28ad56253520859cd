@@ -1,0 +1,39 @@
+
+//grade
+custom["49de87fb-f3b0-0937-935a-1879f8242ddf"]={
+    onChange: function() {
+        if (this.value == 'C') {
+            form.form.approver_label.value = 'COAM'
+        }
+        if (this.value == 'D') {
+            form.form.approver_label.value = 'GM HR'
+        }
+        if (this.value == 'G and Below') {
+            form.form.approver_label.value = 'HCM'
+        }
+        if (this.value == 'E to F') {
+            form.form.approver_label.value = 'SM HR'
+        }
+    }
+}
+//--end
+
+//employee_sap_no
+custom["27b90e3a-a90c-b85c-6637-e6cf1df6bb33"]={
+    onChange: function() {
+        var me = this.value;
+        return HTTP.get('/data/sap_employee?filter=' + me).then(function(data) {
+            if (data.length == 0) {
+                Msg.error("Invalid SAP No");
+                return false;
+            }
+            var employee = data[0];
+            form.form.employee_name.value = employee.name;
+            form.form.employee_email.value = employee.email;
+            form.form.designation.value = employee.designation;
+            form.form.center.value = employee.center;
+        });
+    }
+}
+
+//--end

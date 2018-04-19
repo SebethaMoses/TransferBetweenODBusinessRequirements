@@ -1,0 +1,30 @@
+machine:
+  java:
+    version: oraclejdk8
+
+dependencies:
+  cache_directories:
+     - "gradle-2.7"
+  pre:
+     - if [ ! -e "/home/ubuntu/gradle.zip" ]; then  wget -O /home/ubuntu/gradle.zip https://services.gradle.org/distributions/gradle-2.7-all.zip; fi
+     - if [ ! -e "gradle-2.7" ] ; then unzip /home/ubuntu/gradle.zip; fi
+  override:
+     - gradle-2.7/bin/gradle setup || echo no setup configured
+     - pip install git+https://github.com/egis/papertrail-python-cli --upgrade
+test:
+  override:
+    - npm run setup && npm run build
+    - gradle-2.7/bin/gradle jar
+    - gradle-2.7/bin/gradle upgrade
+    - gradle-2.7/bin/gradle install
+    - find ./build/distributions/ -type f | xargs -i{} cp {} $CIRCLE_ARTIFACTS
+
+general:
+  artifacts:
+    - "src/**/mapping.properties"
+
+deployment:
+  production:
+    branch: master
+    commands:
+      - source uat && pt deploy build/distributions/*-upgrade.zip

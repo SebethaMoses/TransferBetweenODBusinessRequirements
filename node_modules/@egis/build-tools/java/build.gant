@@ -1,0 +1,182 @@
+import java.io.*;
+import java.util.zip.*;
+import java.security.MessageDigest;
+
+
+def pom = new XmlSlurper().parse(new File('pom.xml'))
+def pkg  = "${pom.groupId.text()}.${pom.artifactId.text()}"
+def version = pom.artifactId.text() + "-" + pom.version.text()
+def libBucket = "papertrail"
+def commit = "git rev-parse --short HEAD".execute().text.replaceAll("\n", "").trim()
+commit += "git rev-list --date-order --pretty --max-count=1 HEAD | grep Date | sed 's/Date: //'".execute().text.replaceAll("\n", "").trim()
+
+def DF = "dd MMM yyyy HH:mm:ss"
+
+downloadLibs("libs")
+downloadLibs("test-libs")
+
+ant.path(id: 'build.classpath') {
+
+    fileset(dir: 'bin', ) {
+            include(name: '**/*.class')
+    }
+
+    fileset(dir: 'build', erroronmissingdir: false) {
+        include(name: '*.jar')
+    }
+    fileset(dir: 'libs') {
+        include(name: '*.jar')
+    }
+}
+
+
+ant.path(id: 'test.classpath') {
+    fileset(dir: 'test-libs') {
+        include(name: '*.jar')
+    }
+}
+
+ant.taskdef(name: 'groovyc', classname: 'org.codehaus.groovy.ant.Groovyc', classpathref: 'build.classpath')
+
+ant.taskdef(name: "testng", classname: "org.testng.TestNGAntTask", classpathref: "test.classpath")
+
+
+def _compile(dir) {
+    ant.mkdir(dir: 'bin')
+    ant.groovyc(srcdir: dir, destdir: 'bin', fork: 'true', failonerror: 'true', includeantruntime: 'false') {
+        classpath {
+            path(refid: 'build.classpath')
+            path(refid: 'test.classpath')
+        }
+        javac(source: '1.8', target: '1.8', debug: 'on')
+    }
+}
+
+target(clean: "testing") {
+    new File("bin").deleteDir()
+    new File("build").deleteDir()
+    ant.mkdir(dir: 'bin')
+    ant.mkdir(dir: 'build')
+}
+
+target(test: "testing") {
+    depends compile
+    def xml = testng_xml(pom)
+    xml.deleteOnExit()
+    _compile("test/groovy")
+    ant.testng(classpathref: 'build.classpath', sourceDir: 'bin', outputDir: 'build/test-output', haltOnFailure: true, dumpCommand: true) {
+        ant.xmlfileset(dir: xml.parentFile.absolutePath, includes: "*.xml")
+
+    }
+}
+
+
+target(compile: "building") {
+    _compile("src/groovy")
+    ant.jar(destfile: "build/${version}.jar") {
+        ant.manifest() {
+            attribute(name: "Git-Version", value: commit + " built on " + new Date().format(DF))
+        }
+
+        fileset(dir: 'bin') {
+            include(name: '**/*')
+            // exclude(name: pkg.replaceAll("\\.", "/") + "/test/**/*" )
+        }
+
+    }
+}
+
+def downloadLibs(dir) {
+    def _files = [];
+    new File(dir).eachFileRecurse({
+        if (it.name == 'lib.txt') {
+            println "Downloading dependencies for ${it.path}"
+            it.eachLine { dep ->
+
+                def name = dep.split(" ")[0]
+                def _md5;
+                if (dep.split(" ").length == 2) {
+                    _md5 = dep.split(" ")[1]
+                }
+
+                File file = new File(it.parentFile, name);
+                String url = "https://s3.amazonaws.com/papertrail/libs/$name"
+                if (!file.exists()) {
+                    download(url, file)
+
+                } else if (_md5 != null && !_md5.equals(md5(file))) {
+                    println "$name corrupted"
+                    download(url, file)
+                }
+                _files.add(file)
+            }
+        }
+    })
+}
+
+def download(String url, File file) {
+    println "Downloading $file.name"
+    new URL(url).openConnection().with { conn ->
+        file.withOutputStream { out ->
+            conn.inputStream.with { inp ->
+                out << inp
+                inp.close()
+            }
+        }
+    }
+
+    if (file.name.endsWith(".zip")) {
+        println "Unzipping $file.name"
+        unzip(file)
+    }
+}
+
+def md5(File file) {
+    if (!file.exists()) {
+        return "missing"
+
+    }
+    char[] HEX = "0123456789abcdef".toCharArray();
+    def BUFFER_SIZE = 1024;
+    file.withInputStream { input ->
+
+
+        MessageDigest digest = MessageDigest.getInstance("MD5")
+        byte[] b = new byte[BUFFER_SIZE];
+
+        for (int n = input.read(b); n != -1; n = input.read(b)) {
+            digest.update(b, 0, n);
+        }
+
+        byte[] identifier = digest.digest();
+        char[] buffer = new char[identifier.length * 2];
+
+        for (int i = 0; i < identifier.length; ++i) {
+            buffer[2 * i] = HEX[identifier[i] >> 4 & 15];
+            buffer[2 * i + 1] = HEX[identifier[i] & 15];
+        }
+
+        return new String(buffer);
+    }
+}
+
+def testng_xml(pom) {
+    File file = File.createTempFile("testng", ".xml");
+    file.write(
+            """
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="${pom.artifactId.text()}" verbose="2" >
+  <test name="default"   >
+      <groups>
+         <run>
+             <exclude name="broken"/>
+         </run>
+      </groups>
+      <packages>
+          <package name="${pom.groupId.text()}.${pom.artifactId.text()}.test"/>
+      </packages>
+ </test>
+</suite>
+""")
+    return file;
+}

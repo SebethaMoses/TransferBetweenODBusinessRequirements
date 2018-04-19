@@ -1,0 +1,38 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+
+        classpath "gradle.plugin.com.egis:gradle-build:3.3"
+        classpath 'org.ajoberstar:grgit:1.1.0'
+        classpath "jp.classmethod.aws:gradle-aws-plugin:0.+"
+    }
+}
+
+ext {
+    pkg = 'TransferBetweenODBusinessRequirements'
+    libBucket = 'papertrail'
+    libPrefix = "libs/"
+}
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: "com.egis.gradle"
+
+dependencies {
+    repositories {
+        jcenter()
+    }
+    testCompile 'org.testng:testng:6.9.10'
+}
+
+test() {
+    useTestNG {
+        excludeGroups 'broken'
+    }
+}                                                                                                                                                                                                                                                                              

@@ -1,0 +1,22 @@
+{
+  "name": "TransferBetweenODBusinessRequirements",
+  "moduleName": "TransferBetweenODBusinessRequirements",
+  "port": 8102,
+  "mainFile": "TransferBetweenODBusinessRequirements",
+  "plugin": "PortalApp",
+  "scripts": {
+    "dev": "rm -rf dist && gulp --gulpfile node_modules/@egis/build-tools/Gulpfile.js --cwd ./ plugin_watch --watch",
+    "setup": "npm install && npm run update",
+    "update": "sh node_modules/@egis/build-tools/npm-install.sh",
+    "full": "npm run setup && npm run build && npm run test",
+    "build": "rm -rf dist/main; rm -rf build/ && gulp --gulpfile node_modules/@egis/build-tools/Gulpfile.js --cwd ./ plugin --env production"
+  },
+  "devDependencies": { 
+    "@egis/build-tools": "^1.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/egis/TransferBetweenODBusinessRequirements.git"
+  },
+  "version": "1.0.0"
+}
